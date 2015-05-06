@@ -29,7 +29,7 @@ Adafruit_LSM303_Accel_Unified accel = Adafruit_LSM303_Accel_Unified(54321);
 Adafruit_LSM303_Mag_Unified mag = Adafruit_LSM303_Mag_Unified(12345);
 
 #define ID "2" //THIS UNIT'S ID! EACH WILL NEED A UNIQUE ONE, THEY ARE LABELED
-#define HOST "192.168.1.12" //THIS IS THE IP ADDRESS OF YOUR COMPUTER
+#define HOST "10.0.1.2" //THIS IS THE IP ADDRESS OF YOUR COMPUTER
 #define PORT 11999
 
 
@@ -60,8 +60,8 @@ const int magneHigh = abs(magneLow);
 int mapValue = 255;                     // Maximum output value (Set to byte data type)
 
 /* Change these to match your WiFi network */
-const char mySSID[] = "internet"; //network name
-const char myPassword[] = "America0nline!"; //password
+const char mySSID[] = "networkz"; //network name
+const char myPassword[] = "n3tw0rkz!"; //password
 
 void terminal();
 
