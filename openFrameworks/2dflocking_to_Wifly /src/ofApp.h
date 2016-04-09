@@ -21,10 +21,17 @@ public:
     void gotMessage(ofMessage msg);
     double getAverageX(vector<Particle> pList);
     float accelX;
-
+    
+    void startComplessita();
+    void drawTitleScreen(int fade);
+    bool titleScreen = true;
+    bool titleFading = false;
+    int currTitleFade = 255;
+    void drawInfoBox();
+    
     vector<Particle> particles;
     int person=0;
-    int N=1000;
+    int N=3000;
     int lastX;
     int currentX;
     float d;
@@ -36,4 +43,7 @@ public:
     
     string recvdDataString;
     string sentDataString;
+    
+    bool testing = false;
+    string testStr = "";
 };

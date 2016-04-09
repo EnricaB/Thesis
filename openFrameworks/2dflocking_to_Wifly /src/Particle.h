@@ -14,6 +14,8 @@ public:
     ofPoint getX();
     ofPoint getHeading();
     
+
+    
     void addForce(ofPoint _force);
     
     void addRepulsionForce(ofPoint _pos, float _rad, float _scale);
@@ -43,8 +45,10 @@ public:
     void update();
     void draw();
     
-private:
     ofPoint pos;
+    
+private:
+
     ofPoint vel;
     ofPoint acc;
     ofPoint Xpos;

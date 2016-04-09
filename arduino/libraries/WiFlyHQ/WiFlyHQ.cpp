@@ -35,7 +35,6 @@ extern unsigned int __heap_start;
 extern void *__brkval;
 
 #undef DEBUG
-//#define DEBUG
 
 #ifdef DEBUG
 #define DPRINT(item) debug.print(item)
@@ -530,7 +529,7 @@ boolean WiFly::checkStream(const prog_char *str, boolean peeked)
     next = pgm_read_byte(str++);
     while (readTimeout(&peekBuf[peekHead]),50) {
 	if (peekBuf[peekHead] != next) {
-	    if (++peekHead > sizeof(peekBuf)) {
+	    if (++peekHead >= sizeof(peekBuf)) {
 		peekHead = 0;
 	    }
 	    peekCount++;
@@ -539,7 +538,7 @@ boolean WiFly::checkStream(const prog_char *str, boolean peeked)
 	    }
 	    break;
 	}
-	if (++peekHead > sizeof(peekBuf)) {
+	if (++peekHead >= sizeof(peekBuf)) {
 	    peekHead = 0;
 	}
 	peekCount++;
@@ -601,7 +600,7 @@ int WiFly::read()
     /* Any data in peek buffer? */
     if (peekCount) {
 	data = (uint8_t)peekBuf[peekTail++];
-	if (peekTail > sizeof(peekBuf)) {
+	if (peekTail >= sizeof(peekBuf)) {
 	    peekTail = 0;
 	}
 	peekCount--;
@@ -613,7 +612,7 @@ int WiFly::read()
 		return -1;
 	    } else {
 		data = (uint8_t)peekBuf[peekTail++];
-		if (peekTail > sizeof(peekBuf)) {
+		if (peekTail >= sizeof(peekBuf)) {
 		    peekTail = 0;
 		}
 		peekCount--;
@@ -1446,6 +1445,42 @@ uint32_t WiFly::getBaud()
     return getopt(WIFLY_GET_BAUD);
 }
 
+/**
+ * This command puts the module to sleep. You can wake
+ * the module by sending characters over the UART or by
+ * using the wake timer (supplied in seconds).
+ */
+boolean WiFly::sleep(uint16_t seconds)
+{
+    if (seconds != NULL) {
+        if(!setopt(PSTR("set sys wake"), seconds)) {
+            return false;
+        }
+    }
+    if (!startCommand()) {
+        return false;
+    }
+    send_P(PSTR("sleep\r"));
+    inCommandMode = false;
+    return true;
+}
+
+/**
+ * This command sets the real-time clock by synchronizing
+ * with the time server specified with the time server
+ * (set time) parameters. This command sends a UDP time
+ * server request packet.
+ */
+boolean WiFly::time()
+{
+    if (!startCommand()) {
+        return false;
+    }
+    send_P(PSTR("time\r"));
+    finishCommand();
+    return true;
+}
+
 char *WiFly::getTime(char *buf, int size)
 {
     return getopt(WIFLY_GET_TIME, buf, size);
@@ -1528,7 +1563,7 @@ int8_t WiFly::getDHCPMode()
     return mode;
 }
 
-static struct {
+const static struct {
     uint8_t protocol;
     char name[6];
 } protmap[] __attribute__((__progmem__)) = {
@@ -1687,102 +1722,6 @@ boolean WiFly::setopt(const prog_char *cmd, const char *buf, const __FlashString
     finishCommand();
     return res;
 }
-uint8_t WiFly:: getNumNetworks()
-{
-    const prog_char *joinResult[] = {
-        PSTR("SCAN:Found 0"),
-        PSTR("SCAN:Found 1"),
-        PSTR("SCAN:Found 2"),
-        PSTR("SCAN:Found 3"),
-        PSTR("SCAN:Found 4"),
-        PSTR("SCAN:Found 5"),
-        PSTR("SCAN:Found 6"),
-        PSTR("SCAN:Found 7"),
-        PSTR("SCAN:Found 8"),
-        PSTR("SCAN:Found 9"),
-        PSTR("SCAN:Found 10")
-    };
-    int8_t res;
-//    if(!startCommand()) {
-//        return -1;
-//    }
-    send_P(PSTR("scan 30\r"));
-    
-    res = multiMatch_P(joinResult, 8, 15000);
-    //getPrompt(); 
-    //finishCommand();
-    return res;
-}
-
-/*get scan in new format optional return as json array string... */
-char *WiFly::getScanNew(char *buf, int size, bool json){
-    /* Set New Scan Option */
-    //if (!setopt(PSTR("set sys printlvl 0x4000"), (char *)NULL)) {
-      //  debug.println(F("Failed to enable new scan format"));
-    //}
-    
-    const prog_char *joinResult[] = {
-        PSTR("SCAN:Found 0"),
-        PSTR("SCAN:Found 1"),
-        PSTR("SCAN:Found 2"),
-        PSTR("SCAN:Found 3"),
-        PSTR("SCAN:Found 4"),
-        PSTR("SCAN:Found 5"),
-        PSTR("SCAN:Found 6"),
-        PSTR("SCAN:Found 7"),
-        PSTR("SCAN:Found 8"),
-        PSTR("SCAN:Found 9"),
-        PSTR("SCAN:Found 10")
-    };
-    
-    int8_t res;
-    if(!startCommand()) {
-        return (char *)"<error>";
-    }
-    send_P(PSTR("scan 30\r"));
-    
-    //res = multiMatch_P(joinResult, 8, 15000);
-    res = getNumNetworks();
-    while(res==0){
-    	delay(1500);
-    	res = getNumNetworks();
-    }
-    debug.println(res);
-    gets(buf, size);
-    //String data; 
-    if(!json){
-        for(int i = 0; i<res; i++){
-            gets(buf, size);
-            //data += buf;
-            //data += "\n\r";
-            debug.println(buf);
-        }
-    } else{
-        /*format data as JSON Array*/
-//        data += "[";
-//        for (int i = 0; i<res; i++) {
-//            data += "\"";
-//            gets(buf,size);
-//            data += buf;
-//            if(i==res-1) data += "\"";
-//            else data += "\",";
-//            debug.println(buf);
-//        }
-//        data += "]";
-
-    }
-    //data.toCharArray(buf, size);
-    
-    finishCommand();
-    /* Reset Sys printlvl 0 */
-    //if (!setopt(PSTR("set sys printlvl 0"), (char *)NULL)) {
-    //    debug.println(F("Failed to turn off sys print"));
-    //}
-    
-    return buf;
-    
-    
-}
 
 /* Save current configuration */
 boolean WiFly::save()
@@ -1816,7 +1755,7 @@ boolean WiFly::reboot()
 	return false;
     }
 
-    delay(2000);
+    delay(5000);
     inCommandMode = false;
     exitCommand = 0;
     init();
@@ -1840,6 +1779,11 @@ boolean WiFly::factoryRestore()
 
     finishCommand();
     return res;
+}
+
+boolean WiFly::setDeviceID(const __FlashStringHelper *buf)
+{
+    return setopt(PSTR("set o d"), NULL, buf);
 }
 
 boolean WiFly::setDeviceID(const char *buf)
@@ -2140,13 +2084,6 @@ boolean WiFly::setChannel(uint8_t channel)
     }
     return setopt(PSTR("set wlan chan"), channel);
 }
-boolean WiFly::setChannel(const char *buf)
-{
-    //if (channel > 13) {
-	//channel = 13;
-    //}
-    return setopt(PSTR("set wlan chan"), buf);
-}
 
 /** Set WEP key */
 boolean WiFly::setKey(const char *buf)
@@ -2199,7 +2136,7 @@ char WiFly::getSpaceReplace(void)
 }
 
 /* data rates to register setting */
-static struct {
+const static struct {
     uint32_t rate;
     uint8_t setting;
 } rateMap[] __attribute__((__progmem__)) = {
@@ -2587,72 +2524,6 @@ boolean WiFly::createAdhocNetwork(const char *ssid, uint8_t channel)
 }
 
 /**
- * Create an Access Point.
- * The WiFly is assigned IP address 169.254.1.1.
- * @param ssid the SSID to use for the network
- * @param channel the WiFi channel to use; 1 to 13.
- * @retval true - successfully create Ad Hoc network
- * @retval false - failed
- * @note the WiFly is rebooted as the final step of this command.
- */
-boolean WiFly::createAP(const char *ssid, const char *channel)
-{
-    startCommand();
-    setChannel(channel); //10 i
-    setJoin(WIFLY_WLAN_JOIN_AP); //7
-    setIP(F("169.254.1.1"));
-	setGateway("169.254.1.1");
-	setNetmask(F("255.255.255.0"));
-    setDHCP(WIFLY_DHCP_MODE_SERVER);//4
-    setSSID(ssid);
-    //join();
-    
-    save();
-    finishCommand();
-    reboot();
-    return true;
-}
-/**
- * Create an Soft Access Point.
- * @param buff the SSID to use for the network
- * @retval true - successfully create Access Point
- * @retval false - failed
- */
-boolean WiFly::setSoftAP(const char *buf)
-{
-    return setopt(PSTR("apmode "), buf);
-}
-
-/**
- * Create an Soft Access Point.
- * The WiFly is assigned IP address 169.254.1.1.
- * This uses the DeviceID plus the last byte of the MAC for the SSID
- * @retval true - successfully create Ad Hoc network
- * @retval false - failed
- * @note the WiFly is rebooted as the final step of this command.
- */
-boolean WiFly::setSoftAP()
-{
-    return setopt(PSTR("apmode"));
-}
-
-
-boolean WiFly::runWebConfig()
-{
-	startCommand();
-	println("run web_app");
-	boolean bwifiConfig = false;
-	while(bwifiConfig == false){
-		bwifiConfig = match("Disabling AP mode",60000);
-	}
-	//finishCommand();
-	inCommandMode = false;
-	Serial.println("DONE CONFIG");
-	//reboot();
-}
-
-
-/**
  * Open a TCP connection.
  * If there is already an open connection then that is closed first.
  * @param addr - the IP address or hostname to connect. A DNS lookup will be peformed
@@ -2664,7 +2535,7 @@ boolean WiFly::runWebConfig()
  * @retval true - success, the connection is open
  * @retval false - failed, or connection already in progress
  */
-boolean WiFly::open(const char *addr, int port, boolean block)
+boolean WiFly::open(const char *addr, uint16_t port, boolean block)
 {
     char buf[20];
     char ch;
@@ -2689,7 +2560,7 @@ boolean WiFly::open(const char *addr, int port, boolean block)
     send(buf);
     send_P(PSTR("\r"));
 
-     if (!getPrompt(10000)) {
+    if (!getPrompt()) {
 	debug.println(F("Failed to get prompt"));
 	debug.println(F("WiFly has crashed and will reboot..."));
 	while (1); /* wait for the reboot */
@@ -2756,7 +2627,7 @@ boolean WiFly::open(const char *addr, int port, boolean block)
  * @retval true - success, the connection is open
  * @retval false - failed, or connection already in progress
  */
-boolean WiFly::open(IPAddress addr, int port, boolean block)
+boolean WiFly::open(IPAddress addr, uint16_t port, boolean block)
 {
     char buf[16];
     return open(iptoa(addr, buf, sizeof(buf)), port, block);

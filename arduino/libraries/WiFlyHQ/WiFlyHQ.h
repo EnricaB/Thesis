@@ -74,6 +74,10 @@
 #include <avr/pgmspace.h>
 #include <IPAddress.h>
 
+#if (ARDUINO >= 103)
+typedef const char PROGMEM prog_char;
+#endif
+
 /* IP Protocol bits */
 #define WIFLY_PROTOCOL_UDP		0x01
 #define WIFLY_PROTOCOL_TCP		0x02
@@ -111,7 +115,6 @@
 #define WIFLY_WLAN_JOIN_AUTO		0x01	/* Auto-join network set in SSID, passkey, and channel. */
 #define WIFLY_WLAN_JOIN_ANY		0x02	/* Ignore SSID and join strongest network using passkey. */
 #define WIFLY_WLAN_JOIN_ADHOC		0x04	/* Create an Adhoc network using SSID, Channel, IP and NetMask */
-#define WIFLY_WLAN_JOIN_AP		0x07	/* Create an AP using SSID, Channel, IP and NetMask */
 
 #define WIFLY_DEFAULT_TIMEOUT		500	/* 500 milliseconds */
 
@@ -158,6 +161,7 @@ public:
 
     bool setJoin(uint8_t join);
     boolean setDeviceID(const char *buf);
+    boolean setDeviceID(const __FlashStringHelper *buf);
     boolean setBaud(uint32_t baud);
     uint32_t getBaud();
     uint8_t getUartMode();
@@ -182,7 +186,6 @@ public:
     boolean setGateway(const char *buf);
     boolean setDNS(const char *buf);
     boolean setChannel(uint8_t channel);
-    boolean setChannel(const char *buf);
     boolean setKey(const char *buf);
     boolean setPassphrase(const char *buf);
     boolean setSpaceReplace(char ch);
@@ -222,10 +225,10 @@ public:
     boolean disableUdpAutoPair();
 
     boolean setIOFunc(const uint8_t func);
-
-    char *getScanNew(char *buf, int size, bool json = false);/*cp*/
-    uint8_t getNumNetworks();/*cp*/
-
+    
+    boolean sleep(uint16_t seconds = 0);
+    
+    boolean time();
     char *getTime(char *buf, int size);
     uint32_t getUptime();
     uint8_t getTimezone();
@@ -237,11 +240,7 @@ public:
     boolean enableDHCP();
     boolean disableDHCP();
     
-    boolean setSoftAP(const char *buf);
-    boolean setSoftAP();
-    boolean runWebConfig();
     boolean createAdhocNetwork(const char *ssid, uint8_t channel);
-    boolean createAP(const char *ssid, const char *channel);
     boolean join(const char *ssid, uint16_t timeout=20000);
     boolean join(uint16_t timeout=20000);
     boolean join(const char *ssid, const char *password, bool dhcp=true, uint8_t mode=WIFLY_MODE_WPA, uint16_t timeout=20000);
@@ -262,8 +261,8 @@ public:
     void enableHostRestore();
     void disableHostRestore();
 
-    boolean open(const char *addr, int port=80, boolean block=true);
-    boolean open(IPAddress addr, int port=80, boolean block=true);
+    boolean open(const char *addr, uint16_t port=80, boolean block=true);
+    boolean open(IPAddress addr, uint16_t port=80, boolean block=true);
     boolean close();
     boolean openComplete();
     boolean isConnected();
