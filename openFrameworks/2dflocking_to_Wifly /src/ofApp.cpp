@@ -17,13 +17,20 @@ void ofApp::setup(){
     
     recvdDataString = "Waiting for WiFly to Connect...";
     
-    //  Create max Particles
-    // this for loop is for every particle system :make an instance and call it
-  
+    titleImage.loadImage("images/intro_white.png");
+    endingImage.loadImage("images/ending_white.png");
+    
+    introMovie.loadMovie("images/intro_vid.mov");
+    introMovie.setLoopState(OF_LOOP_NORMAL);
+    introMovie.play();
 }
 
 //--------------------------------------------------------------
 void ofApp::update(){
+    
+    if(titleScreen)
+        introMovie.update();
+    
     //from wifly
     float aX,aY,aZ,mX,mY,mZ,dataID;
     
@@ -88,15 +95,19 @@ void ofApp::update(){
 //--------------------------------------------------------------
 void ofApp::draw(){
     
-    
     if(titleScreen){
-        if (titleFading) currTitleFade -= 1;
+        
+        if (titleFading) currTitleFade += titleAdder;
         if (currTitleFade < 0){
+            titleAdder *= -1;
+            titleFading = false;
+        }
+        if (currTitleFade > 260){
             titleScreen = false;
             startComplessita();
         }
-        cout << "curr title fade: "<< currTitleFade << endl;
         drawTitleScreen(currTitleFade);
+        
     } else {
     
         /* ofSetColor(255, 0, 0);
@@ -112,21 +123,18 @@ void ofApp::draw(){
         for (int i = 0; i < N; i++) {
             if(i==person) {
                 ofSetColor(255,0,0);
-                
                 if(accel.size() > 0){
                     accelX =(magne[accel.size()-1].x);
                     if ( accelX >= 130 ) {
                          particles[person].addVel(0.001);
                     }
                 }
-                
                 lastX = (getAverageX(particles));
                 
                 if (lastX != currentX) {
                     if (lastX <= currentX) {
                         sentDataString = "R";
                         udpConnection.Send("R", 1);
-                        
                     }
                     else {
                         sentDataString = "L";
@@ -141,16 +149,22 @@ void ofApp::draw(){
             particles[i].draw();
         }
         
-        
-        if(ofGetKeyPressed('s')){
+        if(ofGetKeyPressed('s'))
             ofEndSaveScreenAsPDF();
-        }
         
         //end wifly
         //ofSetColor(0, 255, 0);
         //ofCircle(getAverageX(particles), ofGetHeight()/2, 5);
-        
         drawInfoBox();
+    }
+    
+    if(showEnding){
+        if(titleFading) currTitleFade += 1;
+        if(currTitleFade > 255){
+            titleFading = false;
+            currTitleFade = 255;
+        }
+        drawEndingScreen(currTitleFade);
     }
 }
 
@@ -167,9 +181,22 @@ void ofApp::keyPressed(int key){
     if(key=='f')
         ofToggleFullscreen();
     
-    if(key== ' ')
+    if(key== ' '){
+        currTitleFade = 255;
         titleFading = true;
+        showEnding = false;
+    }
     
+    if(key == 't'){
+        titleFading = true;
+        cout << "titleFading: "<< titleFading << endl;
+    }
+    
+    if(key== '0'){
+        currTitleFade = 0;
+        titleFading = true;
+        showEnding = true;
+    }
     
     if(key=='`'){
         cout << " SENDING TEST X COMMAND " << endl;
@@ -182,6 +209,7 @@ void ofApp::keyPressed(int key){
 
 //--------------------------------------------------------------
 void ofApp::startComplessita(){
+    introMovie.setPaused(true);
     for (int i = 0; i < N; i++) {
         Particle newParticle;
         newParticle.setInit(ofPoint(ofGetWidth()*0.5,ofGetHeight()*0.5),
@@ -209,11 +237,26 @@ double ofApp::getAverageX(vector<Particle> pList) {
 //--------------------------------------------------------------
 void ofApp::drawTitleScreen(int fade){
     
+    float scaler = 1.0f;
     ofBackground(0, 0, 0);
+//    ofSetColor(50, 50, 50, fade);
+//    ofRect(0, 0, ofGetWidth(), ofGetHeight());
+    ofSetColor(255, 255-fade);
+//    ofSetRectMode(OF_RECTMODE_CENTER);
+    introMovie.draw(0, 0, ofGetWidth(), ofGetHeight());
+    titleImage.draw(0, 0, ofGetWidth(), ofGetHeight());
+//    ofDrawBitmapString("COMPLESSITA", ofGetWidth()/2, ofGetHeight()/2);
+}
+
+//--------------------------------------------------------------
+void ofApp::drawEndingScreen(int fade){
+    
+    ofSetRectMode(OF_RECTMODE_CORNER);
     ofSetColor(50, 50, 50, fade);
     ofRect(0, 0, ofGetWidth(), ofGetHeight());
     ofSetColor(255, 255, 255, fade);
-    ofDrawBitmapString("COMPLESSITA", ofGetWidth()/2, ofGetHeight()/2);
+    endingImage.draw(0, 0, ofGetWidth(), ofGetHeight());
+//    ofDrawBitmapString("WE ARE ALL AT THE MERCY OF COMPLEXITY", ofGetWidth()/2-75, ofGetHeight()/2);
 }
 
 //--------------------------------------------------------------
@@ -241,7 +284,6 @@ void ofApp::drawInfoBox(){
     ofSetColor(textColor);
     ofDrawBitmapString("human x: "+ ofToString(particles[0].pos.x), infoX, infoY+vertSpace*11);
     ofDrawBitmapString("human y: "+ ofToString(particles[0].pos.y), infoX, infoY+vertSpace*12);
-    
 }
 
 //--------------------------------------------------------------

@@ -24,10 +24,19 @@ public:
     
     void startComplessita();
     void drawTitleScreen(int fade);
+    void drawEndingScreen(int fade);
+    void drawInfoBox();
+    
     bool titleScreen = true;
     bool titleFading = false;
+    bool showEnding = false;
     int currTitleFade = 255;
-    void drawInfoBox();
+    
+    ofImage titleImage;
+    ofImage endingImage;
+    ofVideoPlayer introMovie;
+    
+    int titleAdder = -1;
     
     vector<Particle> particles;
     int person=0;
