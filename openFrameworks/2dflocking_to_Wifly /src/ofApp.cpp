@@ -28,6 +28,11 @@ void ofApp::setup(){
 //--------------------------------------------------------------
 void ofApp::update(){
     
+    if(ofGetKeyPressed('t')){
+        cout << "pressing t" << endl;
+        titleFading = true;
+    }
+    
     if(titleScreen)
         introMovie.update();
     
